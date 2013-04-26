@@ -91,10 +91,10 @@ def print_usage
 end
 
 def process_arguments
-	if ARGV.count==0 || ARGV.count>1
+	if ARGV.count==0 || ARGV.count>2
 		return "help"
 	end
-	if ARGV.count==1
+	if [1,2].include?(ARGV.count)
 		if ARGV[0]=="listar"
 			return "print"
 		elsif ARGV[0]=="executar"
@@ -105,14 +105,25 @@ def process_arguments
 	end
 end
 
+def get_base_directory
+	base_directory = ARGV[1] || "."
+	base_directory = File.expand_path(base_directory)
+	File.directory?(base_directory) ? base_directory : nil
+end
+
 def main
 	operation = process_arguments
 	if operation=="help"
 		print_usage
 		return
 	end
-	#directory_list = get_file_list("e:/acervo")
-	directory_list = mock_get_file_list
+	base_directory = get_base_directory()
+	unless base_directory
+		puts "Diretório inválido."
+		return
+	end
+	directory_list = get_file_list(base_directory)
+	#directory_list = mock_get_file_list
 	hierarchical_directory_list = seperate_directories_by_depth(directory_list)
 	normalize(hierarchical_directory_list,operation)
 end
