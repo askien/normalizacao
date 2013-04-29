@@ -38,7 +38,7 @@ def seperate_directories_by_depth(directory_list)
 	return hierarchical_directory_list
 end
 
-def normalize(hierarchical_directory_list, mode_of_operation=nil)
+def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 	# Now we normalize starting by the leaves of the tree, working towards the trunk
 	hierarchical_directory_list.reverse_each do |nivel|
 		nivel.each do |filename|
@@ -64,10 +64,10 @@ def normalize(hierarchical_directory_list, mode_of_operation=nil)
 			#Treat special edge case where we were adding seperators on top level directories, ie: globo -> /globo
 			final_filename = rebuilt_filename.empty? ? working_filename : [rebuilt_filename,working_filename].join(File::SEPARATOR) 
 			#Skip if no change
-			#if final_filename.casecmp(original_filename)==0
-			#	next
-			#end
-			command = "mv -i \"#{original_filename}\" \"#{final_filename}\"" 
+			if final_filename.casecmp(original_filename)==0
+				next
+			end
+			command = "mv -i \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{[base_directory,final_filename].join(File::SEPARATOR)}\"" 
 			if mode_of_operation=="print"
 				puts command
 			elsif mode_of_operation=="execute"
@@ -107,7 +107,9 @@ end
 
 def get_base_directory
 	base_directory = ARGV[1] || "."
+	base_directory = base_directory.encode("UTF-8");
 	base_directory = File.expand_path(base_directory)
+	base_directory = base_directory.encode("UTF-8");
 	File.directory?(base_directory) ? base_directory : nil
 end
 
@@ -122,10 +124,11 @@ def main
 		puts "Diretório inválido."
 		return
 	end
+	return
 	directory_list = get_file_list(base_directory)
 	#directory_list = mock_get_file_list
 	hierarchical_directory_list = seperate_directories_by_depth(directory_list)
-	normalize(hierarchical_directory_list,operation)
+	normalize(hierarchical_directory_list,base_directory,operation)
 end
 
 main
