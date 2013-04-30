@@ -95,8 +95,8 @@ def print_usage
 		puts "  normalizacao executar ."
 end
 
+# TODO Refactor this nasty crap
 def process_arguments
-	puts ARGV.count
 	# No arguments displays help. Mininum number of arguments is 2.
 	if ARGV.count==0 || ARGV.count<2
 		return "help"
@@ -128,7 +128,6 @@ def get_base_directory
 	base_directory = ARGV[1] || "."
 	base_directory = base_directory.encode("UTF-8");
 	base_directory = File.expand_path(base_directory)
-	base_directory = base_directory.encode("UTF-8");
 	File.directory?(base_directory) ? base_directory : nil
 end
 
@@ -143,6 +142,7 @@ def main
 		puts "Diretório inválido."
 		return
 	end
+	return
 
 	directory_list = get_file_list(base_directory)
 	$log_file.puts("Número de diretórios: #{directory_list.count}") if $log_file
