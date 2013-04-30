@@ -2,6 +2,7 @@
 # encoding: UTF-8
 DIACRITIC_CHARS = "ÀÁÂÃÄÅàáâãäåĀāĂăĄąÇçĆćĈĉĊċČčÐðĎďĐđÈÉÊËèéêëĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħÌÍÎÏìíîïĨĩĪīĬĭĮįİıĴĵĶķĸĹĺĻļĽľĿŀŁłÑñŃńŅņŇňŉŊŋÒÓÔÕÖØòóôõöøŌōŎŏŐőŔŕŖŗŘřŚśŜŝŞşŠšſŢţŤťŦŧÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųŴŵÝýÿŶŷŸŹźŻżŽž"
 REGULAR_CHARS = "AAAAAAaaaaaaAaAaAaCcCcCcCcCcDdDdDdEEEEeeeeEeEeEeEeEeGgGgGgGgHhHhIIIIiiiiIiIiIiIiIiJjKkkLlLlLlLlLlNnNnNnNnnNnOOOOOOooooooOoOoOoRrRrRrSsSsSsSssTtTtTtUUUUuuuuUuUuUuUuUuUuWwYyyYyYZzZzZz"
+$log_file = nil
 # Returns an array of directories to process
 def mock_get_file_list
 	directory_list = Array.new
@@ -45,6 +46,7 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 			original_filename = filename.encode("UTF-8");
 			# Skip works in progress
 			if original_filename =~/digicol lacunas/
+				$log_file.puts("Saltando #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
 				next
 			end
 			original_filename.chomp!
@@ -65,7 +67,10 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 			final_filename = rebuilt_filename.empty? ? working_filename : [rebuilt_filename,working_filename].join(File::SEPARATOR) 
 			#Skip if no change
 			if final_filename.casecmp(original_filename)==0
+				$log_file.puts("Nada a fazer com #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
 				next
+			else
+				$log_file.puts("Renomeando #{[base_directory,original_filename].join(File::SEPARATOR)} para #{[base_directory,final_filename].join(File::SEPARATOR)}") if $log_file
 			end
 			command = "mv -i \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{[base_directory,final_filename].join(File::SEPARATOR)}\"" 
 			if mode_of_operation=="print"
@@ -78,30 +83,44 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 end
 
 def print_usage
-		puts "normalizacao [comando]"
+		puts "normalizacao comando diretorio [-l log]"
 		puts ""
 		puts "Comandos:"
 		puts "listar - Escreve na tela os comandos que renomeiam dos directórios do acervo"
 		puts "Exemplo:"
-		puts "  normalizacao listar > comandos.sh"
+		puts "  normalizacao listar . > comandos.sh"
 		puts ""
 		puts "executar - Executa os comandos que renomeiam os directórios do acervo"
 		puts "Exemplo:"
-		puts "  normalizacao executar"
+		puts "  normalizacao executar ."
 end
 
 def process_arguments
-	if ARGV.count==0 || ARGV.count>2
+	puts ARGV.count
+	# No arguments displays help. Mininum number of arguments is 2.
+	if ARGV.count==0 || ARGV.count<2
 		return "help"
 	end
-	if [1,2].include?(ARGV.count)
+	if ["listar","executar"].include?(ARGV[0])
+		current_param = 2
+		while current_param<ARGV.count+1
+			unless ARGV[current_param+1]
+				current_param+=2
+				next				
+			end
+			case ARGV[current_param]
+			when "-l" then $log_file = File.open(ARGV[current_param+1],"w")
+			end
+			current_param+=2
+		end
+
 		if ARGV[0]=="listar"
 			return "print"
 		elsif ARGV[0]=="executar"
 			return "execute"
-		else
-			return "help"
 		end
+	else
+		return "help"
 	end
 end
 
@@ -124,11 +143,14 @@ def main
 		puts "Diretório inválido."
 		return
 	end
-	return
+
 	directory_list = get_file_list(base_directory)
+	$log_file.puts("Número de diretórios: #{directory_list.count}") if $log_file
 	#directory_list = mock_get_file_list
 	hierarchical_directory_list = seperate_directories_by_depth(directory_list)
 	normalize(hierarchical_directory_list,base_directory,operation)
+
+	$log_file.close if $log_file
 end
 
 main
