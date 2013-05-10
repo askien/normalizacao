@@ -45,7 +45,7 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 		nivel.each do |filename|
 			original_filename = filename.encode("UTF-8");
 			# Skip works in progress
-			if original_filename =~/digicol lacunas/
+			if original_filename =~/lacunas/
 				$log_file.puts("Saltando #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
 				next
 			end
@@ -72,11 +72,27 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 			else
 				$log_file.puts("Renomeando #{[base_directory,original_filename].join(File::SEPARATOR)} para #{[base_directory,final_filename].join(File::SEPARATOR)}") if $log_file
 			end
-			command = "mv -i \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{[base_directory,final_filename].join(File::SEPARATOR)}\"" 
-			if mode_of_operation=="print"
-				puts command
-			elsif mode_of_operation=="execute"
-				system(command)
+			#UNIX
+			#command = "mv -i \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{[base_directory,final_filename].join(File::SEPARATOR)}\"" 
+			command = "ren \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{working_filename}\"" 
+			command.gsub!("/","\\")
+			begin
+				command.encode("CP850")
+				#puts "Comando: #{command}"
+				if mode_of_operation=="print"
+					command = command.encode("CP850")
+					puts command.encode("CP850")
+				elsif mode_of_operation=="execute"
+					puts command.encode("CP850")
+					#command = command.encode("CP850")
+					#puts command.encode("CP850")
+					rc = system(command.encode("CP850"))
+					if rc!=0
+						STDERR.puts command
+					end
+				end
+			rescue
+				STDERR.puts "Erro de encoding com #{command}"
 			end
 		end
 	end
@@ -142,14 +158,12 @@ def main
 		puts "Diretório inválido."
 		return
 	end
-	return
 
 	directory_list = get_file_list(base_directory)
 	$log_file.puts("Número de diretórios: #{directory_list.count}") if $log_file
 	#directory_list = mock_get_file_list
 	hierarchical_directory_list = seperate_directories_by_depth(directory_list)
 	normalize(hierarchical_directory_list,base_directory,operation)
-
 	$log_file.close if $log_file
 end
 
