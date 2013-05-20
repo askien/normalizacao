@@ -5,7 +5,7 @@ require 'Set'
 
 directory_list = Dir["**/*"]
 character_list = Set.new
-first_offenders = Hash.new
+offenders = Hash.new
 directory_list.each do |filename|
 	#next unless File.directory?(filename)
 
@@ -14,8 +14,13 @@ directory_list.each do |filename|
 
 	# handle first offenders
 	File.basename(filename).each_char do |c|
-		if !first_offenders[c]
-			first_offenders[c] = filename
+		if c =~ /[a-zA-Z0-9_-]/
+			offenders["a a z, A a Z, 0 a 9, _ e -"] = filename unless offenders["a a z, A a Z, 0 a 9, _ e -"]
+		elsif !offenders[c]
+			offenders[c] = Array.new
+			offenders[c] << filename
+		else
+			offenders[c] << filename			
 		end
 	end
 end
@@ -26,7 +31,14 @@ character_list.each do |x|
 end
 puts "linha"
 
-puts "Lista de first offenders"
-first_offenders.keys.each do |c|
-	puts "#{c} --> #{first_offenders[c]}"
+puts "Lista de offenders"
+offenders.keys.each do |c|
+	if offenders[c].class == String
+		puts "#{c} --> #{offenders[c]}"
+	else
+		puts "#{c} -->"
+		offenders[c].each do |f|
+			puts f
+		end
+	end
 end
