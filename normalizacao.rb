@@ -28,10 +28,10 @@ end
 # Seperate directories by depth
 def seperate_directories_by_depth(directory_list)
 	hierarchical_directory_list = Array.new
-	directory_list.each do |line|
+	directory_list.each do |line| 
 		chunks = line.split(File::SEPARATOR)
 		number_of_chunks = chunks.count
-		unless hierarchical_directory_list[number_of_chunks]
+		unless hierarchical_directory_list[number_of_chunks-1]
 			hierarchical_directory_list[number_of_chunks-1] = Array.new
 		end
 		hierarchical_directory_list[number_of_chunks-1] << line
@@ -50,12 +50,7 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 				next
 			end
 			original_filename.chomp!
-			chunks = original_filename.split(File::SEPARATOR)
-			last_chunk = chunks.last
-			without_last_chunk = chunks.clone
-			without_last_chunk.delete_at(-1)
-			rebuilt_filename = without_last_chunk.join(File::SEPARATOR)
-			working_filename = last_chunk
+			working_filename = File.basename(original_filename)
 			working_filename = working_filename.downcase.gsub(/()*\(()*/,"-").gsub(/()*\)()*/,"").gsub(/( )*\-( )*/,"-").gsub(/ /,"_").gsub(/&/,"e").tr(DIACRITIC_CHARS,REGULAR_CHARS)
 			# special case for date
 			if working_filename =~/.*?\d{2}.*?\d{2}.*?\d{4}.*?/
@@ -63,15 +58,35 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 				#disabled. Do not fix dates
 				#working_filename = working_filename[4..7]+working_filename[2..3]+working_filename[0..1]
 			end
+			# fix month
+			if working_filename =~/^\d{2}( )*?-( )*?(janeiro|fevereiro|marco|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i
+				working_filename = working_filename[0..1]
+			end
+			# fix fulldate
+			if working_filename =~/^\d{8}$/
+				if (working_filename[2..3]== File.basename(File.dirname(original_filename)) or working_filename[2..3]== File.basename(File.dirname(original_filename))[0..1] ) and working_filename[4..7]== File.basename(File.dirname(File.dirname(original_filename)))
+					working_filename = working_filename[0..1]				
+				else
+					$log_file.puts("Data inconsistente -> #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
+					next
+				end
+			end			
 			#Treat special edge case where we were adding seperators on top level directories, ie: globo -> /globo
-			final_filename = rebuilt_filename.empty? ? working_filename : [rebuilt_filename,working_filename].join(File::SEPARATOR) 
+			#final_filename = rebuilt_filename.empty? ? working_filename : [rebuilt_filename,working_filename].join(File::SEPARATOR) 
+			final_filename = working_filename
 			#Skip if no change
-			if final_filename.casecmp(original_filename)==0
+			#puts "#{final_filename} original #{original_filename}"
+			if final_filename.casecmp(File.basename(original_filename))==0
 				$log_file.puts("Nada a fazer com #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
 				next
 			else
+				if File.exists?([base_directory,final_filename].join(File::SEPARATOR))
+					$log_file.puts("Já existe #{[base_directory,final_filename].join(File::SEPARATOR)}") if $log_file
+					next
+				end
 				$log_file.puts("Renomeando #{[base_directory,original_filename].join(File::SEPARATOR)} para #{[base_directory,final_filename].join(File::SEPARATOR)}") if $log_file
 			end
+
 			#UNIX
 			#command = "mv -i \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{[base_directory,final_filename].join(File::SEPARATOR)}\"" 
 			command = "ren \"#{[base_directory,original_filename].join(File::SEPARATOR)}\" \"#{working_filename}\"" 
