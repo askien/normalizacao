@@ -45,10 +45,11 @@ def normalize(hierarchical_directory_list,base_directory,mode_of_operation=nil)
 		nivel.each do |filename|
 			original_filename = filename.encode("UTF-8");
 			# Skip works in progress
-			if original_filename =~/lacunas/
-				$log_file.puts("Saltando #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
-				next
-			end
+			# Not skipping lacunas
+			#if original_filename =~/lacunas/
+			#	$log_file.puts("Saltando #{[base_directory,original_filename].join(File::SEPARATOR)}") if $log_file
+			#	next
+			#end
 			original_filename.chomp!
 			working_filename = File.basename(original_filename)
 			working_filename = working_filename.downcase.gsub(/()*\(()*/,"-").gsub(/()*\)()*/,"").gsub(/( )*\-( )*/,"-").gsub(/ /,"_").gsub(/&/,"e").tr(DIACRITIC_CHARS,REGULAR_CHARS)
